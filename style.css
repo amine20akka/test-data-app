@@ -10,3 +10,89 @@ html, body {
   bottom: 0;
   width: 100%;
 }
+
+#map .ol-zoom .ol-zoom-out {
+  margin-top: 200px;
+  color: rgb(255, 255, 255);
+  background-color: rgb(3, 84, 138);
+}
+#map .ol-zoom .ol-zoom-in {
+  color: rgb(255, 255, 255);
+  background-color: rgb(3, 84, 138);
+}
+#map .ol-zoomslider {
+  background-color: transparent;
+  /*
+  Zoom control top: 0.5em
+  Zoom control padding: 2px
+  Zoom in button margin top: 1px
+  Zoom in button height: font size 1.14em * 1.375 height
+  */
+  top: calc(0.5em + 2px + 1px + 1.14 * 1.375em);
+}
+
+#map .ol-touch .ol-zoom .ol-zoom-out {
+  margin-top: 212px;
+}
+#map .ol-touch .ol-zoomslider {
+  top: 2.75em;
+}
+
+#map .ol-zoom-in.ol-has-tooltip:hover [role=tooltip],
+#map .ol-zoom-in.ol-has-tooltip:focus [role=tooltip] {
+  top: 3px;
+}
+
+#map .ol-zoom-out.ol-has-tooltip:hover [role=tooltip],
+#map .ol-zoom-out.ol-has-tooltip:focus [role=tooltip] {
+  top: 232px;
+}
+
+/* Slider handle (thumb) */
+#map .ol-zoomslider-thumb {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 21.5px;
+  height: 10px;
+  background-color: #f5f8fd;
+  border-radius: 10%;
+  cursor: pointer;
+  z-index: 1001;
+}
+
+/* Hover effect for the slider handle (thumb) */
+#map .ol-zoomslider-thumb:hover {
+  background-color: rgb(166, 212, 243);
+}
+
+/* Style for the toolbar */
+.toolbar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Style for the toolbar buttons */
+.toolbar-btn {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+  background-color: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 20px;
+  color: #333;
+}
+
+
+/* Hover effect for the toolbar buttons */
+.toolbar-btn:hover {
+  background-color: #e0e0e0;
+}

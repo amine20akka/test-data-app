@@ -4,11 +4,18 @@ import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
 import OSM from 'ol/source/OSM';
-import axios from 'axios';
+import XYZ from 'ol/source/XYZ';
+import { defaults as defaultControls, ZoomSlider } from 'ol/control';
+import { DblClickDragZoom, defaults as defaultInteractions, } from 'ol/interaction.js';
+import { fetchAndProcessLayers } from './REST_API.js'
+// import { fetchCapabilities, processCapabilitiesData } from './GetCapabilities_API';
 
-// Initialiser la carte
+// Initialize the map
 const map = new Map({
   target: 'map',
+  interactions: defaultInteractions().extend([
+    new DblClickDragZoom(),
+  ]),
   layers: [
     new TileLayer({
       source: new OSM()
@@ -17,11 +24,59 @@ const map = new Map({
   view: new View({
     center: [0, 0],
     zoom: 2
-  })
+  }),
+  controls: defaultControls().extend([
+    new ZoomSlider(),
+  ]).extend([]),
+});
+
+// Handle FullScreen control with custom button click
+const fullscreenButton = document.getElementById('fullscreen-btn');
+
+fullscreenButton.addEventListener('click', () => {
+  const mapTarget = map.getTargetElement();
+
+  if (!document.fullscreenElement) {
+    if (mapTarget.requestFullscreen) {
+      mapTarget.requestFullscreen().catch(error => {
+        console.error('Failed to enter fullscreen:', error);
+      });
+    } else if (mapTarget.mozRequestFullScreen) { // Firefox
+      mapTarget.mozRequestFullScreen().catch(error => {
+        console.error('Failed to enter fullscreen:', error);
+      });
+    } else if (mapTarget.webkitRequestFullscreen) { // Chrome, Safari, Opera
+      mapTarget.webkitRequestFullscreen().catch(error => {
+        console.error('Failed to enter fullscreen:', error);
+      });
+    } else if (mapTarget.msRequestFullscreen) { // IE/Edge
+      mapTarget.msRequestFullscreen().catch(error => {
+        console.error('Failed to enter fullscreen:', error);
+      });
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(error => {
+        console.error('Failed to exit fullscreen:', error);
+      });
+    } else if (document.mozCancelFullScreen) { // Firefox
+      document.mozCancelFullScreen().catch(error => {
+        console.error('Failed to exit fullscreen:', error);
+      });
+    } else if (document.webkitExitFullscreen) { // Chrome, Safari, Opera
+      document.webkitExitFullscreen().catch(error => {
+        console.error('Failed to exit fullscreen:', error);
+      });
+    } else if (document.msExitFullscreen) { // IE/Edge
+      document.msExitFullscreen().catch(error => {
+        console.error('Failed to exit fullscreen:', error);
+      });
+    }
+  }
 });
 
 // Fonction pour ajouter une couche WMS
-function addWMSLayer(layerName) {
+export function addWMSLayer(layerName) {
   const wmsLayer = new TileLayer({
     source: new TileWMS({
       url: 'http://localhost:8080/geoserver/test_data/wms',
@@ -40,54 +95,58 @@ function addWMSLayer(layerName) {
   map.addLayer(wmsLayer);
 }
 
-// Fonction pour récupérer les informations sur les couches depuis GeoServer en utilisant GetCapabilities
-function fetchLayersFromGeoServer() {
-  // URL de la requête GetCapabilities WMS
-  const url = 'http://localhost:8080/geoserver/test_data/wms?service=WMS&version=1.1.1&request=GetCapabilities';
+// Appel de la fonction pour récupérer et traiter les couches d'un workspace spécifique
+fetchAndProcessLayers('test_data');
 
-  // Effectuer la requête Axios
-  return axios.get(url)
-    .then(response => {
-      // Vérifier si la réponse est OK (code HTTP 200)
-      if (response.status !== 200) {
-        throw new Error('La requête n\'a pas réussi');
-      }
-      return response.data;  // Renvoyer les données de la réponse
-    })
-    .catch(error => {
-      console.error('Erreur lors de la récupération des couches:', error);
-      throw error;  // Propager l'erreur pour la gérer à un niveau supérieur si nécessaire
-    });
-}
+// Sélecteur de fond de carte
+const backgroundSelector = document.getElementById('background-selector');
 
-// Fonction pour traiter les données des couches obtenues depuis GeoServer
-function processLayersData(xmlData) {
-  // Parse XML data
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlData, 'application/xml');
-  
-  // Extraire les noms des couches
-  const layers = xmlDoc.getElementsByTagName('Layer');
-  const layerNames = [];
-  
-  for (let i = 0; i < layers.length; i++) {
-    const nameElement = layers[i].getElementsByTagName('Name')[0];
-    if (nameElement) {
-      layerNames.push(nameElement.textContent);
-    }
+backgroundSelector.addEventListener('change', function() {
+  const selectedValue = this.value;
+
+  // Supprimer les couches actuelles
+  map.getLayers().clear();
+
+  // Ajouter la nouvelle couche en fonction de la sélection
+  switch (selectedValue) {
+    case 'osm':
+      map.addLayer(new TileLayer({
+        source: new OSM()
+      }));
+      fetchAndProcessLayers('test_data');
+      break;
+    case 'satellite':
+      map.addLayer(new TileLayer({
+        source: new XYZ({
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attributions: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        })
+      }));
+      fetchAndProcessLayers('test_data');
+      break;
+      case 'topographic':
+        map.addLayer(new TileLayer({
+          source: new XYZ({
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+            attributions: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+          })
+        }));
+        fetchAndProcessLayers('test_data');
+        break;
+    default:
+      break;
   }
-  
-  // Ajouter les couches à la carte
-  layerNames.forEach(layerName => {
-    addWMSLayer(layerName);
-  });
-}
+});
 
-// Appeler la fonction fetchLayersFromGeoServer pour récupérer les données sur les couches
-fetchLayersFromGeoServer()
-  .then(xmlData => {
-    processLayersData(xmlData);  // Traitement des données des couches récupérées
-  })
-  .catch(error => {
-    console.error('Erreur globale:', error);  // Gestion des erreurs globales
-  });
+
+// // Function to fetch and process layers from GetCapabilities
+// fetchCapabilities()
+//   .then(xmlData => {
+//     const layerNames = processCapabilitiesData(xmlData);
+//     layerNames.forEach(layerName => {
+//       addWMSLayer(layerName);
+//     });
+//   })
+//   .catch(error => {
+//     console.error('Global error:', error);
+//   });
